@@ -28,12 +28,26 @@ npm i keyed-promise-queue
 ### Create Queue
  ```typescript
 const queue = new KeyedPromiseQueue();
-const res = await queue.processKeyed('test', any_async_function());
+const res = await queue.processKeyed('test', () => any_async_function());
 ```
+### Using Semaphore
+ ```typescript
+const queue = new KeyedPromiseQueue({{ semaphore: 1 }});
+const res = await queue.processKeyed('test', () => any_async_function());
+
+```
+passing a value to the property semaphore in the constructor option will ensure that only x task will be running in //
+### Using Semaphore
+ ```typescript
+const queue = new KeyedPromiseQueue({{ timeout: 1 }});
+const res = await queue.processKeyed('test', () => any_async_function());
+
+```
+passing a value to the property timeout in the constructor option will ensure that every new process will wait x milliseconds before starting.
 ### Inherit from the queue class
  ```typescript
  class InheritedClass extends KeyedPromiseQueue {
 }
 const queue = new InheritedClass();
-const res = await queue.processKeyed('test', any_async_function());
+const res = await queue.processKeyed('test', () => any_async_function());
 ```

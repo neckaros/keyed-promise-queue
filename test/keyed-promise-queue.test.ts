@@ -60,6 +60,42 @@ describe('Class test', () => {
     expect(ret2).toEqual(2)
   })
 
+  it('Can instantiate with a Semaphore 2', async () => {
+    const queue = new KeyedPromiseQueue({ semaphore: 2 })
+    let resolve1: (value?: {} | PromiseLike<{}>) => void
+    let resolve2: (value?: {} | PromiseLike<{}>) => void
+    let resolve3: (value?: {} | PromiseLike<{}>) => void
+    const promess1 = () =>
+      new Promise(async (resolve, reject) => {
+        resolve1 = resolve
+        await sleep(100, 1)
+        expect(resolve2).toBeDefined()
+        expect(resolve3).toBeUndefined()
+        resolve(1)
+      })
+    const promess2 = () =>
+      new Promise(async resolve => {
+        resolve2 = resolve
+        expect(resolve1).toBeDefined()
+        await sleep(100, 2)
+        resolve(2)
+      })
+    const promess3 = () =>
+      new Promise(async resolve => {
+        resolve3 = resolve
+        expect(resolve1).toBeDefined()
+        await sleep(100, 3)
+        resolve(3)
+      })
+    const res = queue.processKeyed('test', promess1)
+    const res2 = queue.processKeyed('test2', promess2)
+    const res3 = queue.processKeyed('test3', promess3)
+    const [ret1, ret2, ret3] = await Promise.all([res, res2, res3])
+    expect(ret1).toEqual(1)
+    expect(ret2).toEqual(2)
+    expect(ret3).toEqual(3)
+  })
+
   it('Can instantiate a queue and add multiple task', async () => {
     const queue = new KeyedPromiseQueue()
     const res1 = await queue.processKeyed('test', () => sleep(100, '1'))
