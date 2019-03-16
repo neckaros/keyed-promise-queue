@@ -24,22 +24,13 @@ export class KeyedPromiseQueue {
       const resolvers = this.keyedQueue.get(key)!
       return new Promise((resolve, reject) => resolvers.push({ resolve, reject }))
     }
+
     const promess = new Promise<T>((resolve, reject) =>
       this.keyedQueue.set(key, [{ resolve, reject }])
     )
-    // if (options.timeout || this.options.timeout) {
-    //   this.timeout(options.timeout || this.options.timeout!);
-    // }
 
-    // const promessCleaner = process().then(p => {
-    //   console.log('cleaning')
-    //   this.keyedQueue.delete(key)
-    //   this.queueSize--;
-    //   this.take();
-    //   return p
-    // })
     this.pendingQueue.push({ key, process })
-    this.take()
+    this.take().then()
     return promess
   }
 
@@ -59,7 +50,7 @@ export class KeyedPromiseQueue {
           }
           this.keyedQueue.delete(el.key)
           this.queueSize--
-          this.take()
+          this.take().then()
         })
       }
     }
