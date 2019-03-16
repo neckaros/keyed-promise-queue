@@ -41,7 +41,6 @@ describe('Class test', () => {
     let resolve2: (value?: {} | PromiseLike<{}>) => void
     const promess1 = () =>
       new Promise(async (resolve, reject) => {
-        console.log('called1')
         resolve1 = resolve
         await sleep(100, 1)
         expect(resolve2).toBeUndefined()
@@ -49,7 +48,6 @@ describe('Class test', () => {
       })
     const promess2 = () =>
       new Promise(async resolve => {
-        console.log('called2')
         resolve2 = resolve
         expect(resolve1).toBeDefined()
         await sleep(100, 2)

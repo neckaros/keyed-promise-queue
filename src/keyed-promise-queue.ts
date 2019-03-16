@@ -19,7 +19,7 @@ export class KeyedPromiseQueue {
 
   constructor(public options: IGlobalOptions = {}) {}
 
-  processKeyed<T>(key: string, process: () => PromiseLike<T>): PromiseLike<T> {
+  async processKeyed<T>(key: string, process: () => PromiseLike<T>): Promise<T> {
     if (this.keyedQueue.has(key)) {
       const resolvers = this.keyedQueue.get(key)!
       return new Promise((resolve, reject) => resolvers.push({ resolve, reject }))
@@ -30,12 +30,11 @@ export class KeyedPromiseQueue {
     )
 
     this.pendingQueue.push({ key, process })
-    this.take().then()
+    await this.take()
     return promess
   }
 
   async take() {
-    // console.log('checking', this.pendingQueue.length, this.queueSize);
     if (this.pendingQueue.length > 0) {
       if (!this.options.semaphore || this.queueSize < this.options.semaphore) {
         const el = this.pendingQueue.shift()!
@@ -43,14 +42,14 @@ export class KeyedPromiseQueue {
         if (this.options.timeout) {
           await this.timeout(this.options.timeout)
         }
-        el.process().then(r => {
+        el.process().then(async r => {
           const resolvers = this.keyedQueue.get(el.key)!
           for (const resolver of resolvers) {
             resolver.resolve(r)
           }
           this.keyedQueue.delete(el.key)
           this.queueSize--
-          this.take().then()
+          await this.take()
         })
       }
     }
