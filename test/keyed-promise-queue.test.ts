@@ -3,7 +3,11 @@ import { KeyedPromiseQueue as globalObject } from '../src'
 const sleep = <T>(time: number, result: T, throwit?: string) =>
   new Promise<T>(function(resolve, reject) {
     setTimeout(function() {
-      resolve(result)
+      if (throwit) {
+        reject(new Error(throwit))
+      } else {
+        resolve(result)
+      }
     }, time)
   })
 
@@ -127,6 +131,16 @@ describe('Class test', () => {
     await queue.processKeyed('test', () => sleep(100, obj1))
     const res2 = await queue.processKeyed('test', () => sleep(100, obj2))
     expect(res2).toStrictEqual(obj2)
+  })
+  it('Should manage throwing promises and reexcute after', async () => {
+    const queue = new KeyedPromiseQueue()
+    const obj1 = { test: 1 }
+    const obj2 = { test: 2 }
+    await expect(queue.processKeyed('test', () => sleep(100, obj1, 'test'))).rejects.toThrow(Error)
+    const res2 = await queue.processKeyed('test', () => sleep(100, obj2))
+    const res3 = await queue.processKeyed('test2', () => sleep(100, obj1))
+    expect(res2).toStrictEqual(obj2)
+    expect(res3).toStrictEqual(obj1)
   })
 
   it('Inherited class', async () => {

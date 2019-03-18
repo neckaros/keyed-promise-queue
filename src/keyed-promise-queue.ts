@@ -5,7 +5,7 @@ interface IResolver {
   reject: Reject
   resolve: Resolve
 }
-type Resolve = (value?: any | PromiseLike<any>) => void
+type Resolve = (value?: any | Promise<any>) => void
 type Reject = (reason?: any) => void
 
 interface IGlobalOptions {
@@ -15,11 +15,11 @@ interface IGlobalOptions {
 export class KeyedPromiseQueue {
   public queueSize = 0
   public readonly keyedQueue = new Map<string, { resolve: Resolve; reject: Reject }[]>()
-  public readonly pendingQueue: Array<{ key: string; process: () => PromiseLike<any> }> = []
+  public readonly pendingQueue: Array<{ key: string; process: () => Promise<any> }> = []
 
   constructor(public options: IGlobalOptions = {}) {}
 
-  async processKeyed<T>(key: string, process: () => PromiseLike<T>): Promise<T> {
+  async processKeyed<T>(key: string, process: () => Promise<T>): Promise<T> {
     if (this.keyedQueue.has(key)) {
       const resolvers = this.keyedQueue.get(key)!
       return new Promise((resolve, reject) => resolvers.push({ resolve, reject }))
@@ -42,15 +42,25 @@ export class KeyedPromiseQueue {
         if (this.options.timeout) {
           await this.timeout(this.options.timeout)
         }
-        el.process().then(async r => {
-          const resolvers = this.keyedQueue.get(el.key)!
-          for (const resolver of resolvers) {
-            resolver.resolve(r)
-          }
-          this.keyedQueue.delete(el.key)
-          this.queueSize--
-          await this.take()
-        })
+        el.process()
+          .then(async r => {
+            const resolvers = this.keyedQueue.get(el.key)!
+            for (const resolver of resolvers) {
+              resolver.resolve(r)
+            }
+            this.keyedQueue.delete(el.key)
+            this.queueSize--
+            await this.take()
+          })
+          .catch(async e => {
+            const resolvers = this.keyedQueue.get(el.key)!
+            for (const resolver of resolvers) {
+              resolver.reject(e)
+            }
+            this.keyedQueue.delete(el.key)
+            this.queueSize--
+            await this.take()
+          })
       }
     }
   }
